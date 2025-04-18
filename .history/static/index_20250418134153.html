@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图像生成器 (带下载 - 横向布局)</title> <style>
+        /* 基本样式 */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; padding: 20px; max-width: 1000px; /* 可以适当加宽最大宽度 */ margin: auto; background-color: #f8f9fa; color: #333; }
+        h1, h2 { color: #0056b3; }
+        form { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px; /* 与结果区域增加间距 */ }
+        fieldset { border: 1px solid #ccc; border-radius: 4px; padding: 15px; margin-bottom: 20px; }
+        legend { font-weight: bold; color: #0056b3; padding: 0 10px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="number"], input[type="text"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
+        input[type="number"]:focus, select:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25); }
+        button[type="submit"] { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; transition: background-color 0.2s ease-in-out; display: block; width: 100%; margin-top: 10px; }
+        button[type="submit"]:hover { background-color: #0056b3; }
+        button[type="submit"]:disabled { background-color: #cccccc; cursor: not-allowed; }
+
+        /* --- 结果显示区域的 Flexbox 布局 --- */
+        .image-results {
+            /* 1. 设置为 Flex 容器 */
+            display: flex;
+
+            /* 2. 允许项目换行 (在小屏幕上会变成垂直排列) */
+            flex-wrap: wrap;
+
+            /* 3. 设置项目之间的间隙 */
+            gap: 20px; /* 水平和垂直间隙都是 20px */
+
+            /* 4. 控制项目在主轴（横轴）上的对齐方式 */
+            justify-content: space-around; /* 项目两侧有空间 */
+            /* 或者使用 space-between (项目之间有空间) */
+            /* justify-content: space-between; */
+
+            /* 5. (可选) 控制项目在交叉轴（纵轴）上的对齐方式 */
+            /* align-items: flex-start; */ /* 顶部对齐 */
+            /* align-items: center; */ /* 居中对齐 */
+            /* align-items: stretch; */ /* (默认) 拉伸以填充容器高度 */
+
+            margin-top: 30px; /* 与表单的间距 */
+        }
+
+        /* --- 每个图像容器的样式 --- */
+        .image-container {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+
+            /* 6. 控制 Flex 项目的宽度，实现横向排列 */
+            /* flex-basis: calc(50% - 10px); */ /* 基础宽度设置为接近一半，减去一半的 gap */
+            /* 或者使用 width 配合 box-sizing */
+             width: calc(50% - 10px); /* 适用于 gap: 20px 的两列布局 */
+
+            /* 7. (可选) 设置最小宽度，防止在极窄屏幕过度压缩 */
+             min-width: 300px; /* 调整这个值以适应内容 */
+
+            /* 8. 确保 box-sizing 正确应用 */
+            box-sizing: border-box;
+
+             /* 9. (可选) 让项目可以增长和收缩 */
+             /* flex-grow: 1; */
+             /* flex-shrink: 1; */
+        }
+
+        /* 响应式调整：当屏幕宽度小于某个值时，让项目占满整行，实现堆叠 */
+        @media (max-width: 700px) { /* 调整断点值 */
+            .image-container {
+                width: 100%; /* 在小屏幕上宽度变为100% */
+                /* flex-basis: 100%; */ /* 或者直接设置 flex-basis */
+            }
+        }
+
+
+        .image-container h2 { margin-top: 0; font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 10px;}
+        .image-container img { max-width: 100%; height: auto; display: block; margin: 10px auto 0; background-color: #e9ecef; border: 1px solid #ced4da; min-height: 100px; }
+        .status-message { margin-top: 10px; font-weight: bold; padding: 8px; border-radius: 4px; }
+        .loading { color: #17a2b8; background-color: #d1ecf1; border: 1px solid #bee5eb; }
+        .error-message { color: #dc3545; background-color: #f8d7da; border: 1px solid #f5c6cb;}
+        #result-style1, #result-style2 { display: none; } /* 初始隐藏整个容器 */
+        .loading, .error-message { display: none; }
+
+        /* 下载按钮样式 */
+        .download-button {
+            display: none; /* 初始隐藏 */
+            margin-top: 15px;
+            padding: 8px 15px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            border: none;
+            display: inline-block;
+        }
+        .download-button:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+
+    <h1>图像生成器 (带下载 - 横向布局)</h1>
+    <p>输入几何参数，点击按钮即可生成两种预设样式的图像，并提供下载链接。</p>
+
+    <form id="image-form">
+        <div class="form-group">
+            <label for="dpi">分辨率 (DPI):</label>
+            <input type="number" id="dpi" name="dpi" value="300" min="72" max="1200" placeholder="例如: 300 (范围 72-1200)" required>
+        </div>
+        <fieldset>
+            <legend>外框参数</legend>
+            <div class="form-group">
+                <label for="outer_width_mm">宽度 (mm):</label>
+                <input type="number" id="outer_width_mm" name="outer_width_mm" value="60" step="0.1" min="1" placeholder="例如: 60" required>
+            </div>
+            <div class="form-group">
+                <label for="outer_height_mm">高度 (mm):</label>
+                <input type="number" id="outer_height_mm" name="outer_height_mm" value="92" step="0.1" min="1" placeholder="例如: 92" required>
+            </div>
+            <div class="form-group">
+                <label for="outer_shape_type">形状:</label>
+                <select id="outer_shape_type" name="outer_shape_type" required>
+                    <option value="rectangle" selected>矩形 (Rectangle)</option>
+                    <option value="ellipse">椭圆 (Ellipse)</option>
+                </select>
+            </div>
+        </fieldset>
+        <fieldset>
+            <legend>内框参数</legend>
+            <div class="form-group">
+                <label for="inner_width_mm">宽度 (mm):</label>
+                <input type="number" id="inner_width_mm" name="inner_width_mm" value="54" step="0.1" min="0" placeholder="例如: 54 (可为 0)" required>
+            </div>
+            <div class="form-group">
+                <label for="inner_height_mm">高度 (mm):</label>
+                <input type="number" id="inner_height_mm" name="inner_height_mm" value="86" step="0.1" min="0" placeholder="例如: 86 (可为 0)" required>
+            </div>
+            <div class="form-group">
+                <label for="inner_shape_type">形状:</label>
+                <select id="inner_shape_type" name="inner_shape_type" required>
+                    <option value="rectangle" selected>矩形/圆角矩形 (Rectangle)</option>
+                    <option value="ellipse">椭圆 (Ellipse)</option>
+                </select>
+            </div>
+             <div class="form-group" id="corner-radius-group">
+                <label for="inner_corner_radius_mm">圆角半径 (mm):</label>
+                <input type="number" id="inner_corner_radius_mm" name="inner_corner_radius_mm" value="3.18" step="0.01" min="0" placeholder="例如: 3.18 (仅内框为矩形时有效)" required>
+            </div>
+        </fieldset>
+        <button type="submit" id="generate-button">生成图像</button>
+    </form>
+
+    <div class="image-results">
+        <div class="image-container" id="result-style1">
+            <h2>样式 1 (主要视觉)</h2>
+            <div class="status-message loading" id="loading-style1">正在生成，请稍候...</div>
+            <div class="status-message error-message" id="error-style1"></div>
+            <img id="img-style1" alt="生成的样式1图像预览">
+            <a href="#" id="download-style1" class="download-button" download="style1_generated.png">下载样式1图像</a>
+        </div>
+        <div class="image-container" id="result-style2">
+            <h2>样式 2 (遮罩样式)</h2>
+            <div class="status-message loading" id="loading-style2">正在生成，请稍候...</div>
+            <div class="status-message error-message" id="error-style2"></div>
+            <img id="img-style2" alt="生成的样式2图像预览">
+            <a href="#" id="download-style2" class="download-button" download="style2_generated.png">下载样式2图像</a>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

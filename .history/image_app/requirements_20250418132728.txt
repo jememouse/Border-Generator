@@ -1,0 +1,3 @@
+fastapi
+uvicorn[standard] # [standard] 包含了运行 uvicorn 所需的依赖
+pillow # 用于图像处理，虽然 image_generator.py 还没具体实现，但通常会用到

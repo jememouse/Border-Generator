@@ -1,0 +1,2 @@
+fastapi
+uvicorn[standard] # [standard] 包含了运行 uvicorn 所需的依赖

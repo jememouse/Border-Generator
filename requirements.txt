@@ -1,0 +1,6 @@
+# requirements.txt
+fastapi>=0.100.0,<0.112.0 # 核心 Web 框架
+uvicorn[standard]>=0.20.0,<0.30.0 # ASGI 服务器，用于运行 FastAPI 应用
+Pillow>=9.0.0,<11.0.0 # 图像处理库
+python-multipart>=0.0.5,<0.0.10 # FastAPI 处理表单数据 (Form) 需要
+# jinja2>=3.0.0,<4.0.0 # 如果你选择使用 Jinja2 模板引擎，则取消此行注释

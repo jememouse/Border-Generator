@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图像生成器 (带下载)</title>
+    <style>
+        /* 基本样式 */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; padding: 20px; max-width: 800px; margin: auto; background-color: #f8f9fa; color: #333; }
+        h1, h2 { color: #0056b3; }
+        form { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        fieldset { border: 1px solid #ccc; border-radius: 4px; padding: 15px; margin-bottom: 20px; }
+        legend { font-weight: bold; color: #0056b3; padding: 0 10px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        /* 输入框和下拉选择统一样式 */
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* 让 padding 和 border 包含在宽度内 */
+            font-size: 1rem;
+        }
+        input[type="number"]:focus, select:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25); }
+        /* 按钮样式 */
+        button[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s ease-in-out;
+            display: block; /* 让按钮独占一行 */
+            width: 100%; /* 宽度100% */
+            margin-top: 10px;
+        }
+        button[type="submit"]:hover { background-color: #0056b3; }
+        button[type="submit"]:disabled { background-color: #cccccc; cursor: not-allowed; } /* 禁用状态 */
+        /* 结果显示区域 */
+        .image-results { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
+        .image-container { background-color: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 15px; text-align: center; width: calc(50% - 10px); box-shadow: 0 1px 3px rgba(0,0,0,0.05); min-width: 250px;}
+        .image-container h2 { margin-top: 0; font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 10px;}
+        /* 图片样式 */
+        .image-container img {
+             max-width: 100%; /* 图片最大宽度为其容器宽度 */
+             height: auto; /* 高度自动，保持比例 */
+             display: block; /* 消除图片底部的空白 */
+             margin: 10px auto 0; /* 上边距，左右自动居中，无下边距 */
+             background-color: #e9ecef; /* 给透明图片加个浅色背景便于查看 */
+             border: 1px solid #ced4da; /* 加个边框 */
+             min-height: 100px; /* 给图片一个最小高度 */
+        }
+        /* 加载和错误提示信息 */
+        .status-message { margin-top: 10px; font-weight: bold; padding: 8px; border-radius: 4px; }
+        .loading { color: #17a2b8; background-color: #d1ecf1; border: 1px solid #bee5eb; } /* 蓝色调 */
+        .error-message { color: #dc3545; background-color: #f8d7da; border: 1px solid #f5c6cb;} /* 红色调 */
+        /* 初始隐藏结果区域和状态信息 */
+        #result-style1, #result-style2 { display: none; }
+        .loading, .error-message { display: none; } /* 默认隐藏 */
+        /* 下载按钮样式 */
+        .download-button {
+            display: none; /* 初始隐藏 */
+            margin-top: 15px; /* 与图片间距 */
+            padding: 8px 15px;
+            background-color: #28a745; /* 绿色 */
+            color: white;
+            text-decoration: none; /* 移除链接下划线 */
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            border: none; /* 确保看起来像按钮 */
+            /* 使用 inline-block 或 block 都可以 */
+            display: inline-block;
+        }
+        .download-button:hover {
+            background-color: #218838; /* 深绿色 */
+        }
+    </style>
+</head>
+<body>
+
+    <h1>图像生成器 (带下载)</h1>
+    <p>输入几何参数，点击按钮即可生成两种预设样式的图像，并提供下载链接。</p>
+
+    <form id="image-form">
+        <div class="form-group">
+            <label for="dpi">分辨率 (DPI):</label>
+            <input type="number" id="dpi" name="dpi" value="300" min="72" max="1200" placeholder="例如: 300 (范围 72-1200)" required>
+        </div>
+
+        <fieldset>
+            <legend>外框参数</legend>
+            <div class="form-group">
+                <label for="outer_width_mm">宽度 (mm):</label>
+                <input type="number" id="outer_width_mm" name="outer_width_mm" value="60" step="0.1" min="1" placeholder="例如: 60" required>
+            </div>
+            <div class="form-group">
+                <label for="outer_height_mm">高度 (mm):</label>
+                <input type="number" id="outer_height_mm" name="outer_height_mm" value="92" step="0.1" min="1" placeholder="例如: 92" required>
+            </div>
+            <div class="form-group">
+                <label for="outer_shape_type">形状:</label>
+                <select id="outer_shape_type" name="outer_shape_type" required>
+                    <option value="rectangle" selected>矩形 (Rectangle)</option>
+                    <option value="ellipse">椭圆 (Ellipse)</option>
+                </select>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>内框参数</legend>
+            <div class="form-group">
+                <label for="inner_width_mm">宽度 (mm):</label>
+                <input type="number" id="inner_width_mm" name="inner_width_mm" value="54" step="0.1" min="0" placeholder="例如: 54 (可为 0)" required>
+            </div>
+            <div class="form-group">
+                <label for="inner_height_mm">高度 (mm):</label>
+                <input type="number" id="inner_height_mm" name="inner_height_mm" value="86" step="0.1" min="0" placeholder="例如: 86 (可为 0)" required>
+            </div>
+            <div class="form-group">
+                <label for="inner_shape_type">形状:</label>
+                <select id="inner_shape_type" name="inner_shape_type" required>
+                    <option value="rectangle" selected>矩形/圆角矩形 (Rectangle)</option>
+                    <option value="ellipse">椭圆 (Ellipse)</option>
+                </select>
+            </div>
+             <div class="form-group" id="corner-radius-group">
+                <label for="inner_corner_radius_mm">圆角半径 (mm):</label>
+                <input type="number" id="inner_corner_radius_mm" name="inner_corner_radius_mm" value="3.18" step="0.01" min="0" placeholder="例如: 3.18 (仅内框为矩形时有效)" required>
+            </div>
+        </fieldset>
+
+        <button type="submit" id="generate-button">生成图像</button>
+    </form>
+
+    <div class="image-results">
+        <div class="image-container" id="result-style1">
+            <h2>样式 1 (主要视觉)</h2>
+            <div class="status-message loading" id="loading-style1">正在生成，请稍候...</div>
+            <div class="status-message error-message" id="error-style1"></div>
+            <img id="img-style1" alt="生成的样式1图像预览">
+             <a href="#" id="download-style1" class="download-button" download="style1_generated.png" style="display: none;">下载样式1图像</a>
+        </div>
+        <div class="image-container" id="result-style2">
+            <h2>样式 2 (遮罩样式)</h2>
+            <div class="status-message loading" id="loading-style2">正在生成，请稍候...</div>
+            <div class="status-message error-message" id="error-style2"></div>
+            <img id="img-style2" alt="生成的样式2图像预览">
+            <a href="#" id="download-style2" class="download-button" download="style2_generated.png" style="display: none;">下载样式2图像</a>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
