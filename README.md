@@ -13,4 +13,13 @@
 
 ## 如何运行
 
-(请在此处添加运行说明)
+1. 确保已安装 Python 3.8 或更高版本。
+2. 安装依赖项：
+   ```
+   pip install -r requirements.txt
+   ```
+3. 运行主程序：
+   ```
+   python main.py
+   ```
+4. 打开浏览器并访问 `http://localhost:5000` 查看前端页面。
